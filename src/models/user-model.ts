@@ -1,4 +1,5 @@
 import { Document, Model, Mongoose, Schema } from 'mongoose';
+const mongooseToJson = require('@meanie/mongoose-to-json');
 import ServiceContainer from '../services/service-container';
 import Attributes from './model';
 
@@ -34,7 +35,7 @@ export default function createModel(container: ServiceContainer, mongoose: Mongo
  * @returns User schema
  */
 function createUserSchema(container: ServiceContainer) {
-  const schema = new Schema({
+  const schema = new Schema<UserInstance>({
     email: {
       type: Schema.Types.String,
       required: [true, 'Email is required'],
@@ -68,7 +69,7 @@ function createUserSchema(container: ServiceContainer) {
 
   // Password hash validation
   schema.pre('save', async function (this: UserInstance, next) {
-    if (this.isNew && this.password != null) { // Validates the password only if filled
+    if (this.password != null && (this.isNew || this.isModified('password'))) { // Validates the password only if filled
       try {
         this.password = await container.crypto.hash(this.password, parseInt(process.env.HASH_SALT, 10));
         return next();
@@ -77,6 +78,8 @@ function createUserSchema(container: ServiceContainer) {
       }
     }
   });
+
+  schema.plugin(mongooseToJson);
 
   return schema;
 }

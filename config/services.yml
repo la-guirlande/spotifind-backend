@@ -8,3 +8,8 @@ cache:
   useClones: false
 express:
   requestSizeLimit: 50mb
+spotify:
+  apiUrl: "https://api.spotify.com/v1"
+  endpoints:
+    topArtists: "/me/top/artists"
+    topTracks: "/me/top/tracks"

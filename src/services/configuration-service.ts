@@ -105,5 +105,12 @@ export interface ServicesConfiguration {
   };
   express: {
     requestSizeLimit: string;
+  };
+  spotify: {
+    apiUrl: string;
+    endpoints: {
+      topArtists: string;
+      topTracks: string;
+    };
   }
 }

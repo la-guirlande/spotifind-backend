@@ -109,8 +109,12 @@ export interface ServicesConfiguration {
   spotify: {
     apiUrl: string;
     endpoints: {
-      topArtists: string;
-      topTracks: string;
+      ownUser: string;
+      ownTopArtists: string;
+      ownTopTracks: string;
+      ownPlaylists: string;
+      users: string;
+      tracks: string;
     };
   }
 }

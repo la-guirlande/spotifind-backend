@@ -10,6 +10,7 @@ import ExpressService from './express-service';
 import LogService from './log-service';
 import SchedulerService from './scheduler-service';
 import ServerService from './server-service';
+import SpotifyService from './spotify-service';
 import TokenService from './token-service';
 import WebsocketService from './websocket-service';
 
@@ -51,6 +52,7 @@ export default class ServiceContainer {
   private _cache: CacheService;
   private _scheduler: SchedulerService;
   private _websocket: WebsocketService;
+  private _spotify: SpotifyService;
 
   /**
    * Creates a new services container.
@@ -70,6 +72,7 @@ export default class ServiceContainer {
     this._cache = null;
     this._scheduler = null;
     this._websocket = null;
+    this._spotify = null;
     this.env.load(); // Autoload environment
   }
 
@@ -183,5 +186,13 @@ export default class ServiceContainer {
       this.logger.info('Loaded websocket service');
     }
     return this._websocket;
+  }
+
+  public get spotify(): SpotifyService {
+    if (!this._spotify) {
+      this._spotify = new SpotifyService(this);
+      this.logger.info('Loaded Spotify service');
+    }
+    return this._spotify;
   }
 }

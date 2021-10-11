@@ -11,6 +11,11 @@ export default abstract class Component {
 
   protected readonly container: ServiceContainer;
 
+  /**
+   * Creates a new component.
+   * 
+   * @param container Services container
+   */
   public constructor(container: ServiceContainer) {
     this.container = container;
   }
@@ -19,7 +24,7 @@ export default abstract class Component {
    * Alias for `this.container.log`
    */
   protected get logger(): LogService {
-      return this.container.log;
+      return this.container.logger;
   }
 
   /**

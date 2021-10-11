@@ -86,7 +86,6 @@ export type ConfigurationType = 'JSON' | 'YAML';
  * API configuration.
  */
 export interface APIConfiguration {
-  requestSizeLimit: string;
   documentationRoute: string;
 }
 
@@ -104,4 +103,18 @@ export interface ServicesConfiguration {
     checkPeriod: number;
     useClones: boolean;
   };
+  express: {
+    requestSizeLimit: string;
+  };
+  spotify: {
+    apiUrl: string;
+    endpoints: {
+      ownUser: string;
+      ownTopArtists: string;
+      ownTopTracks: string;
+      ownPlaylists: string;
+      users: string;
+      tracks: string;
+    };
+  }
 }

@@ -6,3 +6,14 @@ cache:
   ttl: 300
   checkPeriod: 600
   useClones: false
+express:
+  requestSizeLimit: 50mb
+spotify:
+  apiUrl: "https://api.spotify.com/v1"
+  endpoints:
+    ownUser: "/me"
+    ownTopArtists: "/me/top/artists"
+    ownTopTracks: "/me/top/tracks"
+    ownPlaylists: "/me/playlists"
+    users: "/users"
+    tracks: "/tracks"

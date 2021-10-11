@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { UserInstance } from '../models/user-model';
 import ServiceContainer from '../services/service-container';
 import Controller, { Link } from './controller';
 
@@ -16,12 +17,37 @@ export default class UserController extends Controller {
    */
   public constructor(container: ServiceContainer) {
     super(container, '/users');
+    this.registerEndpoint({ method: 'GET', uri: '/info', handlers: [this.container.auth.authenticateHandler, this.container.auth.isAuthenticatedHandler, this.infoHandler] });
     this.registerEndpoint({ method: 'GET', uri: '/', handlers: this.listHandler });
     this.registerEndpoint({ method: 'GET', uri: '/:id', handlers: this.getHandler });
     this.registerEndpoint({ method: 'POST', uri: '/', handlers: this.createHandler });
     this.registerEndpoint({ method: 'PUT', uri: '/:id', handlers: this.modifyHandler });
     this.registerEndpoint({ method: 'PATCH', uri: '/:id', handlers: this.updateHandler });
     this.registerEndpoint({ method: 'DELETE', uri: '/:id', handlers: this.deleteHandler });
+  }
+
+  /**
+   * Returns the authenticated user.
+   * 
+   * Path : `GET /users/info`
+   * 
+   * @param req Express request
+   * @param res Express response
+   * @async
+   */
+  public async infoHandler(req: Request, res: Response): Promise<Response> {
+    try {
+      const authUser: UserInstance = res.locals.authUser;
+      if (authUser == null) {
+        return res.status(404).json(this.container.errors.formatErrors({
+          error: 'not_found',
+          error_description: 'User not found'
+        }));
+      }
+      return res.status(200).json({ user: authUser });
+    } catch (err) {
+      return res.status(500).send(this.container.errors.formatServerError());
+    }
   }
 
   /**
@@ -37,7 +63,8 @@ export default class UserController extends Controller {
     try {
       return res.status(200).send({ users: await this.db.users.find() });
     } catch (err) {
-      return res.status(500).send(this.container.errors.formatServerError(err));
+      this.logger.error(err);
+      return res.status(500).send(this.container.errors.formatServerError());
     }
   }
 
@@ -62,7 +89,7 @@ export default class UserController extends Controller {
       return res.status(200).send({ user });
     } catch (err) {
       this.logger.error(err);
-      return res.status(500).send(this.container.errors.formatServerError(err));
+      return res.status(500).send(this.container.errors.formatServerError());
     }
   }
 
@@ -79,9 +106,10 @@ export default class UserController extends Controller {
     try {
       const user = await this.db.users.create({
         email: req.body.email,
-        name: req.body.name.name.name,
+        name: req.body.name,
         password: req.body.password
       });
+      res.setHeader('Location', `${req.protocol}://${req.get('host')}${this.rootUri}/${user.id}`);
       return res.status(201).send({
         id: user.id,
         links: [{
@@ -95,7 +123,7 @@ export default class UserController extends Controller {
       if (err.name === 'ValidationError') {
         return res.status(400).send(this.container.errors.formatErrors(...this.container.errors.translateMongooseValidationError(err)));
       }
-      return res.status(500).send(this.container.errors.formatServerError(err));
+      return res.status(500).send(this.container.errors.formatServerError());
     }
   }
 
@@ -121,6 +149,7 @@ export default class UserController extends Controller {
       user.name = req.body.name;
       user.password = req.body.password;
       await user.save();
+      res.setHeader('Location', `${req.protocol}://${req.get('host')}${this.rootUri}/${user.id}`);
       return res.status(200).send({
         id: user.id,
         links: [{
@@ -134,7 +163,7 @@ export default class UserController extends Controller {
       if (err.name === 'ValidationError') {
         return res.status(400).send(this.container.errors.formatErrors(...this.container.errors.translateMongooseValidationError(err)));
       }
-      return res.status(500).send(this.container.errors.formatServerError(err));
+      return res.status(500).send(this.container.errors.formatServerError());
     }
   }
 
@@ -166,6 +195,7 @@ export default class UserController extends Controller {
         user.password = req.body.password;
       }
       await user.save();
+      res.setHeader('Location', `${req.protocol}://${req.get('host')}${this.rootUri}/${user.id}`);
       return res.status(200).send({
         id: user.id,
         links: [{
@@ -179,7 +209,7 @@ export default class UserController extends Controller {
       if (err.name === 'ValidationError') {
         return res.status(400).send(this.container.errors.formatErrors(...this.container.errors.translateMongooseValidationError(err)));
       }
-      return res.status(500).send(this.container.errors.formatServerError(err));
+      return res.status(500).send(this.container.errors.formatServerError());
     }
   }
 
@@ -204,7 +234,7 @@ export default class UserController extends Controller {
       return res.status(204).send();
     } catch (err) {
       this.logger.error(err);
-      return res.status(500).send(this.container.errors.formatServerError(err));
+      return res.status(500).send(this.container.errors.formatServerError());
     }
   }
 }

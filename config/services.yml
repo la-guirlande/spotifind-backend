@@ -17,3 +17,7 @@ spotify:
     ownPlaylists: "/me/playlists"
     users: "/users"
     tracks: "/tracks"
+games:
+  autoFinishInactiveGamesCooldown: 30 # In minutes
+  codeLength: 6
+  inactiveTime: 60 # In minutes

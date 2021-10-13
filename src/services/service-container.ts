@@ -7,6 +7,7 @@ import DatabaseService from './database-service';
 import EnvironmentService from './environment-service';
 import ErrorService from './error-service';
 import ExpressService from './express-service';
+import GameService from './game-service';
 import LogService from './log-service';
 import SchedulerService from './scheduler-service';
 import ServerService from './server-service';
@@ -53,6 +54,7 @@ export default class ServiceContainer {
   private _scheduler: SchedulerService;
   private _websocket: WebsocketService;
   private _spotify: SpotifyService;
+  private _games: GameService;
 
   /**
    * Creates a new services container.
@@ -194,5 +196,13 @@ export default class ServiceContainer {
       this.logger.info('Loaded Spotify service');
     }
     return this._spotify;
+  }
+
+  public get games(): GameService {
+    if (!this._games) {
+      this._games = new GameService(this);
+      this.logger.info('Loaded games service');
+    }
+    return this._games;
   }
 }

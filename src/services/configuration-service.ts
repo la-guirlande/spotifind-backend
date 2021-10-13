@@ -116,5 +116,10 @@ export interface ServicesConfiguration {
       users: string;
       tracks: string;
     };
-  }
+  };
+  games: {
+    autoFinishInactiveGamesCooldown: number;
+    codeLength: number;
+    inactiveTime: number;
+  };
 }

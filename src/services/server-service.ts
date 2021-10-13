@@ -1,3 +1,4 @@
+import { Status } from '../models/game-model';
 import Service from './service';
 import ServiceContainer from './service-container';
 
@@ -38,6 +39,12 @@ export default class ServerService extends Service {
     // Connecting to database
     await this.container.db.connect(DB_URL);
     this.logger.info(`Connected to database "${DB_URL}"`);
+
+    // Fetching used codes
+    this.container.games.fetchUsedCodes();
+
+    // Starting games schedulers
+    this.container.games.startSchedulers();
   }
 
   /**
@@ -56,5 +63,8 @@ export default class ServerService extends Service {
     // Disconnecting from database
     await this.container.db.disconnect();
     this.logger.info('Disconnected from database');
+
+    // Stopping games schedulers
+    this.container.games.stopSchedulers();
   }
 }

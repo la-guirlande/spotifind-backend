@@ -76,7 +76,7 @@ function createGameSchema(container: ServiceContainer) {
     toObject: { virtuals: true }
   });
 
-  schema.pre('save', function(this: GameInstance, next) {
+  schema.pre('save', async function(this: GameInstance, next) {
     if (this.isNew) {
       try {
         let code;

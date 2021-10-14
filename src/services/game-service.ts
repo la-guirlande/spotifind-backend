@@ -56,7 +56,7 @@ export default class GameService extends Service {
     const inactiveGames = startedGames.filter(game => game.updatedAt.getTime() < limitDate.getTime());
     inactiveGames.forEach(async game => {
       try {
-        _.remove(this.usedCodes, game.code);
+        _.remove(this._usedCodes, game.code);
         game.status = Status.FINISHED;
         game.code = null;
         await game.save();
@@ -65,7 +65,7 @@ export default class GameService extends Service {
       }
     });
     if (inactiveGames.length > 0) {
-      this.logger.info(inactiveGames.length, `inactive game${inactiveGames.length > 1 ?? 's'} have been set as finished`);
+      this.logger.info(inactiveGames.length, `inactive ${inactiveGames.length === 1 ? 'game has' : 'games have'} been set as finished`);
     }
   }
 

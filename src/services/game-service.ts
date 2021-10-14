@@ -22,6 +22,7 @@ export default class GameService extends Service {
     super(container);
     this._usedCodes = [];
     this.autoFinishInactiveGamesTaskName = 'auto-finish-inactive-games';
+    this.finishInactiveGamesTask = this.finishInactiveGamesTask.bind(this);
   }
 
   /**

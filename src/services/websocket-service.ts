@@ -142,12 +142,54 @@ export default class WebsocketService extends Service {
           return socket.emit(EventType.ERROR, this.container.errors.formatServerError() as ErrorEvent);
         }
       });
+
+      // When the socket wants to start a game
+      socket.on(EventType.START, async (data: StartClientToServerEvent) => {
+        try {
+          const tokenData = await this.container.tokens.decode<GameTokenData>(data.token, process.env.GAME_TOKEN_KEY);
+          const game = await this.db.games.findOne().where('code').equals(tokenData.code);
+          if (game == null) {
+            return socket.emit(EventType.ERROR, this.container.errors.formatErrors({ error: 'not_found', error_description: 'Invalid code' }) as ErrorEvent);
+          }
+          if (game.status !== Status.INIT) {
+            let error_description;
+            switch (game.status) {
+              case Status.IN_PROGRESS:
+                error_description = 'Game in progress';
+                break;
+              case Status.FINISHED:
+                error_description = 'Game finished';
+                break;
+              default:
+                error_description: 'Game not accessible';
+                break;
+            }
+            return socket.emit(EventType.ERROR, this.container.errors.formatErrors({ error: 'access_denied', error_description }) as ErrorEvent);
+          }
+          const player = game.players.find(player => player.id === tokenData.playerId);
+          if (player == null) {
+            return socket.emit(EventType.ERROR, this.container.errors.formatErrors({ error: 'not_found', error_description: 'Invalid token' }) as ErrorEvent);
+          }
+          if (!player.author) {
+            return socket.emit(EventType.ERROR, this.container.errors.formatErrors({ error: 'access_denied', error_description: 'Only the author can start game' }) as ErrorEvent);
+          }
+          game.status = Status.IN_PROGRESS;
+          await game.save();
+          return this.srv.in(game.id).emit(EventType.START, { game } as StartServerToBroadcastEvent);
+        } catch (err) {
+          this.logger.error(err);
+          if (err instanceof MongooseError.ValidationError) {
+            return socket.emit(EventType.ERROR, this.container.errors.formatErrors(...this.container.errors.translateMongooseValidationError(err)) as ErrorEvent);
+          }
+          return socket.emit(EventType.ERROR, this.container.errors.formatServerError() as ErrorEvent);
+        }
+      });
     });
   }
 }
 
 enum EventType {
-  ERROR = 'error', TEST = 'test', JOIN = 'join', CONNECT = 'co'
+  ERROR = 'error', TEST = 'test', JOIN = 'join', CONNECT = 'co', START = 'start'
 }
 
 /**
@@ -210,4 +252,18 @@ interface ConnectServerToClientEvent extends Event {
  */
 interface ConnectServerToBroadcastEvent extends Event {
   player: PlayerAttributes;
+}
+
+/**
+ * Start event (client to server).
+ */
+interface StartClientToServerEvent extends Event {
+  token: string;
+}
+
+/**
+ * Start event (server to broadcast).
+ */
+interface StartServerToBroadcastEvent extends Event {
+  game: GameInstance;
 }

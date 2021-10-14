@@ -88,6 +88,7 @@ export default class GameController extends Controller {
       res.setHeader('Location', `${req.protocol}://${req.get('host')}${this.rootUri}/${game.id}`);
       return res.status(201).send({
         id: game.id,
+        code: game.code,
         token: game.players[0].token,
         links: [{
           rel: 'Gets the created game',

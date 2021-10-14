@@ -76,14 +76,13 @@ function createGameSchema(container: ServiceContainer) {
     toObject: { virtuals: true }
   });
 
-  schema.pre('save', async function(this: GameInstance, next) {
+  schema.pre('save', function(this: GameInstance, next) {
     if (this.isNew) {
       try {
-        const usedCodes = (await container.db.games.find().where('code').ne(null).select('code')).map(game => game.code);
         let code;
         do {
           code = container.crypto.generateRandomNumeric(container.config.services.games.codeLength);
-        } while (usedCodes.includes(code));
+        } while (container.games.usedCodes.includes(code));
         this.code = code;
         container.games.usedCodes.push(code);
         return next();

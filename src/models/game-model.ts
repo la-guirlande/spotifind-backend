@@ -16,6 +16,7 @@ export interface GameAttributes extends Attributes {
  * Player attributes
  */
 export interface PlayerAttributes {
+  token?: string;
   // target: UserInstance;
   name: string;
   author?: boolean;
@@ -64,11 +65,16 @@ function createGameSchema(container: ServiceContainer) {
     },
     players: {
       type: [{
-        type: createPlayerSchema()
+        type: createPlayerSchema(container)
       }],
       default: [],
-      min: [1, 'A game must contains one player minimum'],
-      max: [10, 'A game must contains 10 players maximum']
+      validate: [{
+        validator: (players: PlayerAttributes[]) => players.length >= 1,
+        message: 'A game must contains one player minimum'
+      }, {
+        validator: (players: PlayerAttributes[]) => players.length <= 10,
+        message: 'A game must contains 10 players maximum'
+      }]
     }
   }, {
     timestamps: true,
@@ -85,11 +91,11 @@ function createGameSchema(container: ServiceContainer) {
         } while (container.games.usedCodes.includes(code));
         this.code = code;
         container.games.usedCodes.push(code);
-        return next();
       } catch (err) {
         return next(err as Error);
       }
     }
+    return next();
   });
 
   schema.plugin(mongooseToJson);
@@ -100,10 +106,15 @@ function createGameSchema(container: ServiceContainer) {
 /**
  * Creates the player subschema.
  * 
+ * @param container Services container
  * @returns Player subschema
  */
-function createPlayerSchema() {
+function createPlayerSchema(container: ServiceContainer) {
   const schema = new Schema({
+    token: {
+      type: Schema.Types.String,
+      default: null
+    },
     name: {
       type: Schema.Types.String,
       required: [true, 'Player name is required'],
@@ -118,9 +129,18 @@ function createPlayerSchema() {
       default: 0
     }
   }, {
+    _id: false,
+    id: false,
     timestamps: false,
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
+  });
+
+  schema.pre('save', async function(this: PlayerAttributes & Document, next) {
+    if (this.isNew) {
+      this.token = container.crypto.generateRandomString(32);
+    }
+    return next();
   });
 
   schema.plugin(mongooseToJson);

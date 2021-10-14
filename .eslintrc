@@ -19,6 +19,7 @@
     "no-console": 0,
     "max-classes-per-file": 0,
     "object-literal-sort-keys": 0,
+    "no-unused-labels": 1,
     "@typescript-eslint/member-ordering": [1, {
         "default": [
           "public-static-field",

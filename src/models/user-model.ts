@@ -74,7 +74,7 @@ function createUserSchema(container: ServiceContainer) {
         this.password = await container.crypto.hash(this.password, parseInt(process.env.HASH_SALT, 10));
         return next();
       } catch (err) {
-        return next(err);
+        return next(err as Error);
       }
     }
   });

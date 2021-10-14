@@ -62,18 +62,24 @@ export default class TokenService extends Service {
 /**
  * Token data.
  */
-export interface TokenData {
-  userId?: string;
-}
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface TokenData {}
 
 /**
  * Access token data.
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface AccessTokenData extends TokenData {}
+export interface AccessTokenData extends TokenData {
+  userId?: string;
+}
 
 /**
  * Refresh token data.
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface RefreshTokenData extends TokenData {}
+export interface RefreshTokenData extends TokenData {
+  userId?: string;
+}
+
+export interface GameTokenData extends TokenData {
+  code: string;
+  playerId: string;
+}

@@ -9,5 +9,6 @@ declare namespace NodeJS {
     ACCESS_TOKEN_EXPIRATION: string;
     REFRESH_TOKEN_KEY: string;
     REFRESH_TOKEN_EXPIRATION: string;
+    GAME_TOKEN_KEY: string;
   }
 }

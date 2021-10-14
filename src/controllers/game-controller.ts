@@ -21,6 +21,7 @@ export default class GameController extends Controller {
     this.registerEndpoint({ method: 'GET', uri: '/', handlers: this.listHandler });
     this.registerEndpoint({ method: 'GET', uri: '/:id', handlers: this.getHandler });
     this.registerEndpoint({ method: 'POST', uri: '/', handlers: this.createHandler });
+    this.registerEndpoint({ method: 'DELETE', uri: '/:id', handlers: this.deleteHandler });
   }
 
   /**

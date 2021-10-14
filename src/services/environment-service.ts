@@ -24,4 +24,16 @@ export default class EnvironmentService extends Service {
   public load(): void {
     dotenv.config();
   }
+
+  /**
+   * Gets the current node environment the application is running.
+   */
+  public get nodeEnv(): EnvironmentType {
+    return process.env.NODE_ENV as EnvironmentType || 'development';
+  }
 }
+
+/**
+ * Node environment type.
+ */
+type EnvironmentType = 'development' | 'production';

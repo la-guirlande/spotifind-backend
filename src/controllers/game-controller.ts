@@ -89,7 +89,7 @@ export default class GameController extends Controller {
       return res.status(201).send({
         id: game.id,
         code: game.code,
-        token: game.players[0].token,
+        token: await game.generateToken(game.players[0].id),
         links: [{
           rel: 'Gets the created game',
           action: 'GET',

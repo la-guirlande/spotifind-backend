@@ -1,5 +1,6 @@
 import { Document, Model, Mongoose, Schema } from 'mongoose';
 import ServiceContainer from '../services/service-container';
+import { GameTokenData } from '../services/token-service';
 import Attributes from './model';
 const mongooseToJson = require('@meanie/mongoose-to-json');
 
@@ -15,8 +16,7 @@ export interface GameAttributes extends Attributes {
 /**
  * Player attributes
  */
-export interface PlayerAttributes {
-  token?: string;
+export interface PlayerAttributes extends Partial<Document> {
   // target: UserInstance;
   name: string;
   author?: boolean;
@@ -33,7 +33,9 @@ export enum Status {
 /**
  * Game instance.
  */
-export interface GameInstance extends GameAttributes, Document {}
+export interface GameInstance extends GameAttributes, Document {
+  generateToken(playerId: string): Promise<string>;
+}
 
 /**
  * Creates the game model.
@@ -65,7 +67,7 @@ function createGameSchema(container: ServiceContainer) {
     },
     players: {
       type: [{
-        type: createPlayerSchema(container)
+        type: createPlayerSchema()
       }],
       default: [],
       validate: [{
@@ -80,6 +82,10 @@ function createGameSchema(container: ServiceContainer) {
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
+  });
+
+  schema.method('generateToken', async function (this: GameInstance, playerId: string) {
+    return await container.tokens.encode<GameTokenData>({ code: this.code, playerId }, process.env.GAME_TOKEN_KEY);
   });
 
   schema.pre('save', async function(this: GameInstance, next) {
@@ -106,15 +112,10 @@ function createGameSchema(container: ServiceContainer) {
 /**
  * Creates the player subschema.
  * 
- * @param container Services container
  * @returns Player subschema
  */
-function createPlayerSchema(container: ServiceContainer) {
+function createPlayerSchema() {
   const schema = new Schema({
-    token: {
-      type: Schema.Types.String,
-      default: null
-    },
     name: {
       type: Schema.Types.String,
       required: [true, 'Player name is required'],
@@ -129,18 +130,9 @@ function createPlayerSchema(container: ServiceContainer) {
       default: 0
     }
   }, {
-    _id: false,
-    id: false,
     timestamps: false,
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
-  });
-
-  schema.pre('save', async function(this: PlayerAttributes & Document, next) {
-    if (this.isNew) {
-      this.token = container.crypto.generateRandomString(32);
-    }
-    return next();
   });
 
   schema.plugin(mongooseToJson);

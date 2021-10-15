@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
+import { UserInstance } from '../models/user-model';
 import Service from './service';
 import ServiceContainer from './service-container';
+import { UserData } from './spotify-service';
 import { AccessTokenData } from './token-service';
 
 /**
@@ -66,5 +68,21 @@ export default class AuthenticationService extends Service {
       error: 'access_denied',
       error_description: 'Not authenticated'
     }));
+  }
+
+  /**
+   * Creates a new account if the provided Spotify ID doesn't exists.
+   * 
+   * @param data Spotify user data
+   * @returns User linked with Spotify user ID (created or not)
+   */
+  public async createAccountIfNotExists(data: UserData): Promise<UserInstance> {
+    let user = await this.db.users.findOne({ spotifyId: data.id });
+    if (user == null) {
+      user = await this.db.users.create({
+        spotifyId: data.id
+      });
+    }
+    return user;
   }
 }

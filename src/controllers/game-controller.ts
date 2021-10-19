@@ -35,7 +35,7 @@ export default class GameController extends Controller {
    */
   public async listHandler(req: Request, res: Response): Promise<Response> {
     try {
-      return res.status(200).json({ games: await this.db.games.find() });
+      return res.status(200).json({ games: await this.db.games.find(req.query) });
     } catch (err) {
       this.logger.error(err);
       return res.status(500).json(this.container.errors.formatServerError());

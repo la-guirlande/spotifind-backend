@@ -20,6 +20,7 @@
     "max-classes-per-file": 0,
     "object-literal-sort-keys": 0,
     "no-unused-labels": 1,
+    "no-case-declarations": 0,
     "@typescript-eslint/member-ordering": [1, {
         "default": [
           "public-static-field",

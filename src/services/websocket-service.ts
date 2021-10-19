@@ -22,6 +22,7 @@ import { GameTokenData } from './token-service';
 export default class WebsocketService extends Service {
 
   private srv: Server;
+  private registeredSockets: { socketId: string, room: string }[];
 
   /**
    * Creates a new websocket service.
@@ -31,6 +32,7 @@ export default class WebsocketService extends Service {
   public constructor(container: ServiceContainer) {
     super(container);
     this.srv = null;
+    this.registeredSockets = [];
   }
 
   /**
@@ -70,8 +72,8 @@ export default class WebsocketService extends Service {
 
       // When the socket disconnects
       socket.on('disconnect', () => {
-          socket.rooms.forEach(socket.leave);
-          this.logger.info(`Websocket disconnected : ${socket.handshake.address}`);
+        this.unregister(socket);
+        this.logger.info(`Websocket disconnected : ${socket.handshake.address}`);
       });
 
       // Used for testing websocket connection between server and client (dev only)
@@ -122,7 +124,7 @@ export default class WebsocketService extends Service {
           const tokenData = await this.container.tokens.decode<GameTokenData>(data.token, process.env.GAME_TOKEN_KEY);
           const game = await this.db.games.findOne().where('code').equals(tokenData.code);
           if (game == null) {
-            return socket.emit(EventType.ERROR, this.container.errors.formatErrors({ error: 'not_found', error_description: 'Invalid code' }) as ErrorEvent);
+            return socket.emit(EventType.ERROR, this.container.errors.formatErrors({ error: 'not_found', error_description: 'Invalid token' }) as ErrorEvent);
           }
           if (game.status === Status.FINISHED) {
             return socket.emit(EventType.ERROR, this.container.errors.formatErrors({ error: 'access_denied', error_description: 'Game is finished' }) as ErrorEvent);
@@ -131,9 +133,9 @@ export default class WebsocketService extends Service {
           if (player == null) {
             return socket.emit(EventType.ERROR, this.container.errors.formatErrors({ error: 'not_found', error_description: 'Invalid token' }) as ErrorEvent);
           }
-          socket.join(game.id);
-          socket.emit(EventType.CONNECT, { game, player } as ConnectServerToClientEvent);
-          return socket.to(game.id).emit(EventType.CONNECT, { player } as ConnectServerToBroadcastEvent);
+          this.unregister(socket);
+          this.register(game.id, socket);
+          return this.srv.in(game.id).emit(EventType.CONNECT, { game, player } as ConnectServerToClientEvent);
         } catch (err) {
           this.logger.error(err);
           if (err instanceof MongooseError.ValidationError) {
@@ -175,7 +177,7 @@ export default class WebsocketService extends Service {
           }
           game.status = Status.IN_PROGRESS;
           await game.save();
-          return this.srv.in(game.id).emit(EventType.START, { game } as StartServerToBroadcastEvent);
+          return this.srv.in(game.id).emit(EventType.START, { game } as StartServerToClientEvent);
         } catch (err) {
           this.logger.error(err);
           if (err instanceof MongooseError.ValidationError) {
@@ -186,8 +188,34 @@ export default class WebsocketService extends Service {
       });
     });
   }
+
+  /**
+   * Registers (joins) a room.
+   * 
+   * @param room Room to join
+   * @param socket Socket to join
+   */
+  private register(room: string, socket: Socket): void {
+    this.registeredSockets.push({ room, socketId: socket.id });
+    socket.join(room);
+  }
+
+  /**
+   * Unregisters (leaves) current room if exists.
+   * 
+   * @param socket Socket to leave
+   */
+  private async unregister(socket: Socket): Promise<void> {
+    const registered = this.registeredSockets.find(registered => registered.socketId === socket.id);
+    if (registered != null) {
+      socket.leave(registered.room);
+    }
+  }
 }
 
+/**
+ * Websocket event types.
+ */
 enum EventType {
   ERROR = 'error', TEST = 'test', JOIN = 'join', CONNECT = 'co', START = 'start'
 }
@@ -248,13 +276,6 @@ interface ConnectServerToClientEvent extends Event {
 }
 
 /**
- * Connect event (server to broadcast).
- */
-interface ConnectServerToBroadcastEvent extends Event {
-  player: PlayerAttributes;
-}
-
-/**
  * Start event (client to server).
  */
 interface StartClientToServerEvent extends Event {
@@ -264,6 +285,6 @@ interface StartClientToServerEvent extends Event {
 /**
  * Start event (server to broadcast).
  */
-interface StartServerToBroadcastEvent extends Event {
+interface StartServerToClientEvent extends Event {
   game: GameInstance;
 }

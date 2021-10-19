@@ -188,6 +188,9 @@ export default class WebsocketService extends Service {
   }
 }
 
+/**
+ * Websocket event types.
+ */
 enum EventType {
   ERROR = 'error', TEST = 'test', JOIN = 'join', CONNECT = 'co', START = 'start'
 }

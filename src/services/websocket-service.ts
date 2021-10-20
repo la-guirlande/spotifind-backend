@@ -118,6 +118,33 @@ export default class WebsocketService extends Service {
         }
       });
 
+      // When the socket wants to leave a game
+      socket.on(EventType.LEAVE, async (data: LeaveClientToServerEvent) => {
+        try {
+          const tokenData = await this.container.tokens.decode<GameTokenData>(data.token, process.env.GAME_TOKEN_KEY);
+          const game = await this.db.games.findOne().where('code').equals(tokenData.code);
+          if (game == null) {
+            return socket.emit(EventType.ERROR, this.container.errors.formatErrors({ error: 'not_found', error_description: 'Invalid token' }) as ErrorEvent);
+          }
+          const player = game.players.find(player => player.id === tokenData.playerId);
+          if (player.author) {
+            game.status = Status.FINISHED;
+          } else {
+            _.remove(game.players, player);
+            game.markModified('players');
+          }
+          await game.save();
+          this.unregister(socket);
+          return this.srv.in(game.id).emit(EventType.LEAVE, { game } as LeaveServerToClientEvent);
+        } catch (err) {
+          this.logger.error(err);
+          if (err instanceof MongooseError.ValidationError) {
+            return socket.emit(EventType.ERROR, this.container.errors.formatErrors(...this.container.errors.translateMongooseValidationError(err)) as ErrorEvent);
+          }
+          return socket.emit(EventType.ERROR, this.container.errors.formatServerError() as ErrorEvent);
+        }
+      });
+
       // When the socket wants to connect to a game
       socket.on(EventType.CONNECT, async (data: ConnectClientToServerEvent) => {
         try {
@@ -217,7 +244,7 @@ export default class WebsocketService extends Service {
  * Websocket event types.
  */
 enum EventType {
-  ERROR = 'error', TEST = 'test', JOIN = 'join', CONNECT = 'co', START = 'start'
+  ERROR = 'error', TEST = 'test', JOIN = 'join', LEAVE = 'leave', CONNECT = 'co', START = 'start'
 }
 
 /**
@@ -258,6 +285,22 @@ interface JoinClientToServerEvent extends Event {
  */
 interface JoinServerToClientEvent extends Event {
   token: string;
+}
+
+
+
+/**
+ * Leave event (client to server).
+ */
+ interface LeaveClientToServerEvent extends Event {
+  token: string;
+}
+
+/**
+ * Leave event (server to client).
+ */
+interface LeaveServerToClientEvent extends Event {
+  game: GameInstance;
 }
 
 /**

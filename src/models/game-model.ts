@@ -11,6 +11,11 @@ export interface GameAttributes extends Attributes {
   status?: Status;
   code?: string;
   players: PlayerAttributes[];
+  playlistId?: string;
+  shuffle: boolean;
+  starting: boolean;
+  inProgress: boolean;
+  finished: boolean;
 }
 
 /**
@@ -27,7 +32,7 @@ export interface PlayerAttributes extends Partial<Document> {
  * Game status.
  */
 export enum Status {
-  INIT = 0, IN_PROGRESS = 1, FINISHED = 2
+  INIT = 0, TIMER_BETWEEN = 1, TIMER_CURRENT = 2, FINISHED = 3
 }
 
 /**
@@ -58,7 +63,7 @@ function createGameSchema(container: ServiceContainer) {
   const schema = new Schema<GameInstance>({
     status: {
       type: Schema.Types.Number,
-      enum: [Status.INIT, Status.IN_PROGRESS, Status.FINISHED],
+      enum: [Status.INIT, Status.TIMER_BETWEEN, Status.TIMER_CURRENT, Status.FINISHED],
       default: Status.INIT
     },
     code: {
@@ -77,11 +82,31 @@ function createGameSchema(container: ServiceContainer) {
         validator: (players: PlayerAttributes[]) => players.length <= 10,
         message: 'A game must contains 10 players maximum'
       }]
+    },
+    playlistId: {
+      type: Schema.Types.String,
+      default: null
+    },
+    shuffle: {
+      type: Schema.Types.Boolean,
+      default: true
     }
   }, {
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
+  });
+
+  schema.virtual('starting').get(function(this: GameInstance) {
+    return this.status === Status.INIT;
+  });
+
+  schema.virtual('inProgress').get(function(this: GameInstance) {
+    return this.status === Status.TIMER_BETWEEN || this.status === Status.TIMER_CURRENT;
+  });
+
+  schema.virtual('finished').get(function(this: GameInstance) {
+    return this.status === Status.FINISHED;
   });
 
   schema.method('generateToken', async function (this: GameInstance, playerId: string) {

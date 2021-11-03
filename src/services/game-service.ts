@@ -52,7 +52,7 @@ export default class GameService extends Service {
 
   private async finishInactiveGamesTask(): Promise<void> {
     const limitDate = new Date(Date.now() - this.container.config.services.games.inactiveTime * 60 * 1000);
-    const startedGames = await this.db.games.find().where('status').in([Status.INIT, Status.IN_PROGRESS]);
+    const startedGames = await this.db.games.find().where('status').in([Status.INIT, Status.TIMER_BETWEEN, Status.TIMER_CURRENT]);
     const inactiveGames = startedGames.filter(game => game.updatedAt.getTime() < limitDate.getTime());
     inactiveGames.forEach(async game => {
       try {

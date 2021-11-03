@@ -91,10 +91,11 @@ export default class WebsocketService extends Service {
           if (game == null) {
             return socket.emit(EventType.ERROR, this.container.errors.formatErrors({ error: 'not_found', error_description: 'Invalid code' }) as ErrorEvent);
           }
-          if (game.status !== Status.INIT) {
+          if (!game.starting) {
             let error_description;
             switch (game.status) {
-              case Status.IN_PROGRESS:
+              case Status.TIMER_BETWEEN:
+              case Status.TIMER_CURRENT:
                 error_description = 'Game in progress';
                 break;
               case Status.FINISHED:
@@ -180,10 +181,11 @@ export default class WebsocketService extends Service {
           if (game == null) {
             return socket.emit(EventType.ERROR, this.container.errors.formatErrors({ error: 'not_found', error_description: 'Invalid code' }) as ErrorEvent);
           }
-          if (game.status !== Status.INIT) {
+          if (!game.starting) {
             let error_description;
             switch (game.status) {
-              case Status.IN_PROGRESS:
+              case Status.TIMER_BETWEEN:
+              case Status.TIMER_CURRENT:
                 error_description = 'Game in progress';
                 break;
               case Status.FINISHED:
@@ -202,7 +204,9 @@ export default class WebsocketService extends Service {
           if (!player.author) {
             return socket.emit(EventType.ERROR, this.container.errors.formatErrors({ error: 'access_denied', error_description: 'Only the author can start game' }) as ErrorEvent);
           }
-          game.status = Status.IN_PROGRESS;
+          game.playlistId = data.playlistId;
+          game.shuffle = data.shuffle;
+          game.status = Status.TIMER_BETWEEN;
           await game.save();
           return this.srv.in(game.id).emit(EventType.START, { game } as StartServerToClientEvent);
         } catch (err) {
@@ -323,6 +327,8 @@ interface ConnectServerToClientEvent extends Event {
  */
 interface StartClientToServerEvent extends Event {
   token: string;
+  playlistId: string;
+  shuffle: boolean;
 }
 
 /**
